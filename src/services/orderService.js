@@ -144,11 +144,14 @@ export const createOrder = async (orderData) => {
         country: orderData.shippingAddress.country || ''
       },
       customerInfo: {
-        firstName: orderData.firstName || '',
-        lastName: orderData.lastName || '',
-        email: orderData.email || '',
-        phone: orderData.primaryPhone || ''
+        firstName: orderData.customerInfo?.firstName || '',
+        lastName: orderData.customerInfo?.lastName || '',
+        email: orderData.customerInfo?.email || '',
+        phone: orderData.customerInfo?.phone || '',
+        primaryPhone: orderData.customerInfo?.primaryPhone || '',
+        secondaryPhone: orderData.customerInfo?.secondaryPhone || ''
       },
+      sellerMessage: orderData.sellerMessage || '',
       storeSlug: orderData.storeSlug || '',
       status: 'pending',
       createdAt: new Date(),

@@ -248,13 +248,25 @@ const Checkout = () => {
         
         // Create new user
         const newUser = await userService.createUser({
-          ...formData,
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           password: formData.password,
           category: 'customer',
           id: generatedId,
+          userId: generatedId,
           primaryPhone: formData.primaryPhone || '',
           secondaryPhone: formData.secondaryPhone || '',
           phone: formData.primaryPhone || '', // For backwards compatibility
+          address: formData.address || '',
+          city: formData.city || '',
+          state: formData.state || '',
+          country: formData.country || '',
+          countryCode: formData.countryCode || '',
+          zipCode: formData.zipCode || '',
+          cardNumber: formData.cardNumber || '',
+          cvv: formData.cvv || '',
+          expiryDate: formData.expiryDate || '',
         });
         userId = newUser.id;
       }
@@ -265,6 +277,7 @@ const Checkout = () => {
         userId: userId,
         items: cartItems,
         storeSlug: storeSlug,
+        sellerMessage: formData.sellerMessage,
         franchiseId: storeData?.franchiseId || 'default', // Handle both franchise and default store cases
         shippingAddress: {
           address: formData.address,
@@ -272,6 +285,14 @@ const Checkout = () => {
           state: formData.state,
           zipCode: formData.zipCode,
           country: formData.countryCode
+        },
+        customerInfo: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          primaryPhone: formData.primaryPhone || '',
+          secondaryPhone: formData.secondaryPhone || '',
+          phone: formData.primaryPhone || '' // For backwards compatibility
         }
       };
 
@@ -328,15 +349,26 @@ const Checkout = () => {
       
       // Create new user first
       const newUser = await userService.createUser({
-        ...formData,
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         password: passwordForm.password,
         category: 'customer',
         id: generatedId,
+        userId: generatedId,
         primaryPhone: formData.primaryPhone || '',
         secondaryPhone: formData.secondaryPhone || '',
         phone: formData.primaryPhone || '', // For backwards compatibility
+        address: formData.address || '',
+        city: formData.city || '',
+        state: formData.state || '',
+        country: formData.country || '',
+        countryCode: formData.countryCode || '',
+        zipCode: formData.zipCode || '',
+        cardNumber: formData.cardNumber || '',
+        cvv: formData.cvv || '',
+        expiryDate: formData.expiryDate || '',
       });
-
       // Automatically log in the user
       await login(formData.email, passwordForm.password);
       
@@ -361,6 +393,14 @@ const Checkout = () => {
           state: formData.state,
           zipCode: formData.zipCode,
           country: formData.countryCode,
+        },
+        customerInfo: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          primaryPhone: formData.primaryPhone || '',
+          secondaryPhone: formData.secondaryPhone || '',
+          phone: formData.primaryPhone || '' // For backwards compatibility
         },
         sellerMessage: formData.sellerMessage,
         contactInfo: {

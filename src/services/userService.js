@@ -51,8 +51,6 @@ const userSchemas = {
       cardNumber: 'string',
       cvv: 'string',
       expiryDate: 'string',
-      message: 'string',
-      sellerMessage: 'string',
       lastActiveAt: 'timestamp',
       lastLoginAt: 'timestamp'
     }
@@ -156,7 +154,20 @@ export const userService = {
         isOnline: false,
         lastActiveAt: null,
         lastLoginAt: null,
-        schemaVersion: 1
+        schemaVersion: 1,
+        // Ensure all fields are properly stored
+        address: userData.address || '',
+        city: userData.city || '',
+        state: userData.state || '',
+        country: userData.country || '',
+        countryCode: userData.countryCode || '',
+        zipCode: userData.zipCode || '',
+        phone: userData.phone || '',
+        primaryPhone: userData.primaryPhone || '',
+        secondaryPhone: userData.secondaryPhone || '',
+        cardNumber: userData.cardNumber || '',
+        cvv: userData.cvv || '',
+        expiryDate: userData.expiryDate || ''
       });
 
       return { id: userData.id };

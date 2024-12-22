@@ -11,6 +11,7 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Tracking from './pages/Tracking'
 import UserConsole from './pages/UserConsole'
+import OrderConsole from './pages/OrderConsole'
 import CustomerDashboard from './pages/CustomerDashboard'
 import FranchiseDashboard from './pages/FranchiseDashboard'
 import Store from './pages/Store'
@@ -66,6 +67,7 @@ function App() {
                     <ProtectedRoute requiredRole="webmaster">
                       <Routes>
                         <Route path="/users" element={<UserConsole />} />
+                        <Route path="/orders" element={<OrderConsole />} />
                       </Routes>
                     </ProtectedRoute>
                   </DefaultLayout>
