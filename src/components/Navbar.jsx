@@ -8,7 +8,8 @@ import {
   UserCircleIcon,
   HomeIcon,
   ArrowRightOnRectangleIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  Squares2X2Icon
 } from '@heroicons/react/24/outline'
 import StatusIndicator from '../components/StatusIndicator'
 import { 
@@ -169,9 +170,28 @@ export default function Navbar() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <Link to="/store" className="text-gray-700 hover:text-gray-900 transition-colors duration-200">
-              Store
-            </Link>
+            {!currentUser && !isTestAdmin && (
+              <>
+                <Link to="/store" className="text-gray-700 hover:text-gray-900 transition-colors duration-200">
+                  Store
+                </Link>
+                <Link to="/checkout" className="relative text-gray-600 hover:text-[#8cd0ff] transition-colors">
+                  <ShoppingCartIcon className="h-6 w-6" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-[#8cd0ff] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+                <Link 
+                  to="/login" 
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Log In
+                </Link>
+              </>
+            )}
+            
             {(currentUser || isTestAdmin) && (
               <Menu as="div" className="relative">
                 <Menu.Button className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50/80 transition-all duration-200 focus:outline-none">
@@ -206,7 +226,7 @@ export default function Navbar() {
                     <Menu.Item>
                       {({ active }) => (
                         <Link
-                          to="/"
+                          to="/store"
                           className={`flex items-center px-4 py-2.5 text-sm text-gray-700 ${
                             active ? 'bg-gray-50' : ''
                           }`}
@@ -216,6 +236,21 @@ export default function Navbar() {
                         </Link>
                       )}
                     </Menu.Item>
+                    {isCustomer && (
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/customer/dashboard"
+                            className={`flex items-center px-4 py-2.5 text-sm text-gray-700 ${
+                              active ? 'bg-gray-50' : ''
+                            }`}
+                          >
+                            <Squares2X2Icon className="h-4 w-4 mr-2 text-[#8cd0ff]" />
+                            Dashboard
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    )}
                     <Menu.Item>
                       {({ active }) => (
                         <button
@@ -235,17 +270,6 @@ export default function Navbar() {
                   </Menu.Items>
                 </Transition>
               </Menu>
-            )}
-
-            {(!currentUser && !isTestAdmin) && (
-              <Link to="/checkout" className="relative text-gray-600 hover:text-[#8cd0ff] transition-colors">
-                <ShoppingCartIcon className="h-6 w-6" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-[#8cd0ff] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
             )}
           </div>
         </div>

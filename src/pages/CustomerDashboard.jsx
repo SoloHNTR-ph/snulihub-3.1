@@ -6,20 +6,44 @@ import {
   ShoppingBagIcon, 
   ClockIcon, 
   HeartIcon, 
-  UserCircleIcon 
+  UserCircleIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 const CustomerDashboard = () => {
   const { currentUser, isCustomer, logout } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     if (!currentUser || (!isCustomer && !currentUser?.category === 'test')) {
       navigate('/');
     }
   }, [currentUser, isCustomer, navigate]);
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!currentUser?.id) return;
+      
+      try {
+        const userRef = doc(db, 'users', currentUser.id);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          setUserData(userDoc.data());
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser]);
 
   // Fetch orders
   useEffect(() => {
@@ -60,18 +84,12 @@ const CustomerDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {currentUser.firstName}!
+                Welcome back, {userData?.firstName || currentUser?.firstName || 'Customer'}!
               </h1>
               <p className="mt-1 text-gray-500">
                 Here's what's happening with your account today.
               </p>
             </div>
-            <button
-              onClick={logout}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-            >
-              Logout
-            </button>
           </div>
         </div>
 
@@ -125,30 +143,33 @@ const CustomerDashboard = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Order ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Action
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {ordersLoading ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
                       Loading orders...
                     </td>
                   </tr>
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
                       No orders found
                     </td>
                   </tr>
@@ -177,6 +198,29 @@ const CustomerDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         ${order.totalAmount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.status !== 'pending' && (
+                          order.followUp ? (
+                            <div className="flex items-center justify-center text-green-600">
+                              <CheckCircleIcon className="h-5 w-5 mr-1" />
+                              <span>Followed Up</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                orderService.updateFollowUpStatus(order.id, true);
+                                setOrders(orders.map(o => 
+                                  o.id === order.id ? {...o, followUp: true} : o
+                                ));
+                              }}
+                              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+                            >
+                              Follow Up
+                            </button>
+                          )
+                        )}
                       </td>
                     </tr>
                   ))

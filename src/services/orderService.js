@@ -268,20 +268,33 @@ export const getOrdersByUserId = async (userId) => {
 };
 
 // Update order status
-async function updateOrderStatus(orderId, status) {
+const updateOrderStatus = async (orderId, status) => {
   try {
-    const db = getFirestore(app);
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, {
       status: status.toLowerCase(), // ensure consistent casing
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      followUp: false // Reset followUp when status changes
     });
-    return true;
   } catch (error) {
     console.error('Error updating order status:', error);
     throw error;
   }
-}
+};
+
+// Update follow up status
+const updateFollowUpStatus = async (orderId, followUp) => {
+  try {
+    const orderRef = doc(db, 'orders', orderId);
+    await updateDoc(orderRef, {
+      followUp,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating follow up status:', error);
+    throw error;
+  }
+};
 
 export default {
   createOrder,
@@ -289,5 +302,6 @@ export default {
   getOrdersByCode,
   getOrdersByFranchiseId,
   getOrdersByUserId,
-  updateOrderStatus
+  updateOrderStatus,
+  updateFollowUpStatus
 };

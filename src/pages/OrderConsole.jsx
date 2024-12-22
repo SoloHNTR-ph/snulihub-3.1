@@ -16,7 +16,8 @@ import {
   ShoppingBagIcon,
   UsersIcon,
   BuildingStorefrontIcon,
-  XMarkIcon
+  XMarkIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
 const db = getFirestore(app);
@@ -254,7 +255,7 @@ const OrderConsole = () => {
             <thead>
               <tr>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tracking Number
+                Order ID
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Customer
@@ -296,31 +297,39 @@ const OrderConsole = () => {
                       {new Date(order.createdAt.toDate()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span 
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          order.status === 'processing order' ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' :
-                          order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          order.status === 'verify payment' ? 'bg-purple-100 text-purple-800 cursor-pointer hover:bg-purple-200' :
-                          order.status === 'order sent' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}
-                        onClick={(e) => {
-                          if (order.status === 'verify payment') {
-                            e.stopPropagation();
-                            setSelectedOrder(order);
-                            setModalType('payment');
-                            setShowConfirmModal(true);
-                          } else if (order.status === 'processing order') {
-                            e.stopPropagation();
-                            setSelectedOrder(order);
-                            setModalType('shipping');
-                            setShowConfirmModal(true);
-                          }
-                        }}
-                      >
-                        {formatStatus(order.status)}
-                      </span>
+                      <div className="flex items-center justify-center gap-2">
+                        <span 
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            order.status === 'processing order' ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' :
+                            order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            order.status === 'verify payment' ? 'bg-purple-100 text-purple-800 cursor-pointer hover:bg-purple-200' :
+                            order.status === 'order sent' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}
+                          onClick={(e) => {
+                            if (order.status === 'verify payment') {
+                              e.stopPropagation();
+                              setSelectedOrder(order);
+                              setModalType('payment');
+                              setShowConfirmModal(true);
+                            } else if (order.status === 'processing order') {
+                              e.stopPropagation();
+                              setSelectedOrder(order);
+                              setModalType('shipping');
+                              setShowConfirmModal(true);
+                            }
+                          }}
+                        >
+                          {formatStatus(order.status)}
+                        </span>
+                        {order.followUp && order.status !== 'pending' && (
+                          <ExclamationTriangleIcon 
+                            className="h-5 w-5 text-yellow-500" 
+                            title="Customer has followed up on this order"
+                          />
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                       ${order.totalAmount.toFixed(2)}
