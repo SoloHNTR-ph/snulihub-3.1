@@ -4,6 +4,7 @@ import { MagnifyingGlassIcon, UserIcon, XMarkIcon, PhotoIcon } from '@heroicons/
 import { collection, query, where, getDocs, getFirestore, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import app from '../firebaseConfig';
 import orderService from '../services/orderService';
+import Navbar from '../components/Navbar';
 
 const Tracking = () => {
   const { customerUserId, orderCodeWithFranchise: orderCode } = useParams();
@@ -229,47 +230,9 @@ const Tracking = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="text-2xl font-bold text-primary-600">
-              SnuliHub Store
-            </Link>
-            <div className="w-[600px]">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-16 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="Search orders..."
-                />
-                <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 rounded-md text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <MagnifyingGlassIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <button 
-              onClick={() => setShowPasswordModal(true)} 
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap"
-            >
-              <UserIcon className="h-5 w-5 mr-2" />
-              Login
-            </button>
-          </div>
-        </div>
-      </header>
-
+      <Navbar />
       <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8 h-auto">
-          <div className="text-center mb-8">     
-            <h1 className="text-2xl font-semibold text-gray-900">Track Your Order</h1>
-            <p className="mt-2 text-gray-600">Order ID: {order?.trackingNumber || 'Not available'}</p>
-          </div>
-
           <div className="flex justify-between items-start w-full mb-8 relative">
             {/* Add a background line that spans the entire width */}
             <div className="absolute top-4 left-0 w-full h-0.5 bg-gray-200" aria-hidden="true" />

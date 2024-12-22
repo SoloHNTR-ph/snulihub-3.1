@@ -40,7 +40,7 @@ const Checkout = () => {
     lastName: '',
     email: '',
     country: '',
-    countryCode: 'US',
+    countryCode: '',
     primaryPhone: '',
     secondaryPhone: '',
     address: '',
@@ -347,7 +347,7 @@ const Checkout = () => {
       // Generate user ID first
       const generatedId = await userService.generateNextUserId('cu');
       
-      // Create new user first
+      // Create new user
       const newUser = await userService.createUser({
         email: formData.email,
         firstName: formData.firstName,
@@ -653,7 +653,7 @@ const Checkout = () => {
                       {formData.country ? (
                         <div className="flex items-center gap-2">
                           <ReactCountryFlag
-                            countryCode={formData.country}
+                            countryCode={countries.find(c => c.name === formData.country)?.code || 'US'}
                             svg
                             style={{
                               width: '20px',
@@ -675,7 +675,10 @@ const Checkout = () => {
                               type="button"
                               onClick={() => {
                                 handleInputChange({
-                                  target: { name: 'country', value: country.code }
+                                  target: { name: 'country', value: country.name }
+                                });
+                                handleInputChange({
+                                  target: { name: 'countryCode', value: country.code }
                                 });
                                 setShowCountryDropdown(false);
                               }}
@@ -690,7 +693,7 @@ const Checkout = () => {
                                   height: '15px',
                                 }}
                               />
-                              {country.code}
+                              {country.name}
                             </button>
                           ))}
                         </div>

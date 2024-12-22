@@ -17,7 +17,12 @@ import {
   UsersIcon,
   BuildingStorefrontIcon,
   XMarkIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  UserCircleIcon,
+  MapPinIcon,
+  ChatBubbleLeftIcon,
+  TruckIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 
 const db = getFirestore(app);
@@ -33,6 +38,8 @@ const OrderConsole = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [modalType, setModalType] = useState('');
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -137,6 +144,11 @@ const OrderConsole = () => {
     }
   };
 
+  const handleOrderClick = (order) => {
+    setSelectedOrderDetails(order);
+    setShowOrderDetailsModal(true);
+  };
+
   if (!currentUser) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -204,6 +216,132 @@ const OrderConsole = () => {
         </div>
       )}
 
+      {/* Order Details Modal */}
+      {showOrderDetailsModal && selectedOrderDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-xl w-full mx-4 max-h-[80vh] overflow-y-auto my-4">
+            <div className="p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-bold text-gray-900">Order Details</h2>
+                <button
+                  onClick={() => setShowOrderDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-500 transition-colors"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {/* Customer Info */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-1 mb-1">
+                    <UserCircleIcon className="h-4 w-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Customer Information</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <p className="text-gray-500 text-xs">Name</p>
+                      <p className="font-medium text-sm">{`${selectedOrderDetails.customerInfo.firstName} ${selectedOrderDetails.customerInfo.lastName}`}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Email</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.customerInfo.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Primary Phone</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.customerInfo.primaryPhone || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Secondary Phone</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.customerInfo.secondaryPhone || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping Address */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-1 mb-1">
+                    <MapPinIcon className="h-4 w-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Shipping Address</h3>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-sm">{selectedOrderDetails.shippingAddress.address}</p>
+                    <p className="font-medium text-sm">
+                      {`${selectedOrderDetails.shippingAddress.city}, ${selectedOrderDetails.shippingAddress.state} ${selectedOrderDetails.shippingAddress.zipCode}`}
+                    </p>
+                    <p className="font-medium text-sm">{selectedOrderDetails.shippingAddress.country}</p>
+                  </div>
+                </div>
+
+                {/* Order Status and Tracking */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-1 mb-1">
+                    <ClockIcon className="h-4 w-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Order Status</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <p className="text-gray-500 text-xs">Status</p>
+                      <span className={`inline-block px-2 py-0.5 text-sm font-semibold rounded ${
+                        selectedOrderDetails.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        selectedOrderDetails.status === 'processing order' ? 'bg-blue-100 text-blue-800' :
+                        selectedOrderDetails.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        selectedOrderDetails.status === 'verify payment' ? 'bg-purple-100 text-purple-800' :
+                        selectedOrderDetails.status === 'order sent' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {formatStatus(selectedOrderDetails.status)}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Tracking Number</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.trackingNumber}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-1 mb-1">
+                    <ShoppingBagIcon className="h-4 w-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Order Items</h3>
+                  </div>
+                  <div className="space-y-1.5">
+                    {selectedOrderDetails.items.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between py-1 border-b border-gray-200 last:border-0">
+                        <div className="flex items-center gap-1.5">
+                          <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
+                          <div>
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                          </div>
+                        </div>
+                        <p className="font-medium text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+                      </div>
+                    ))}
+                    <div className="flex justify-between pt-1 font-semibold text-sm">
+                      <p>Total Amount</p>
+                      <p className="text-primary-600">${selectedOrderDetails.totalAmount.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seller Message */}
+                {selectedOrderDetails.sellerMessage && (
+                  <div className="bg-gray-50 p-2 rounded">
+                    <div className="flex items-center gap-1 mb-1">
+                      <ChatBubbleLeftIcon className="h-4 w-4 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900 text-sm">Seller Message</h3>
+                    </div>
+                    <p className="text-sm">{selectedOrderDetails.sellerMessage}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center">
@@ -249,24 +387,24 @@ const OrderConsole = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Orders</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
                 Order ID
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Customer
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Total
                 </th>
               </tr>
@@ -286,7 +424,11 @@ const OrderConsole = () => {
                 </tr>
               ) : (
                 orders.map((order) => (
-                  <tr key={order.id}>
+                  <tr 
+                    key={order.id} 
+                    className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                    onClick={() => handleOrderClick(order)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
                       {order.trackingNumber}
                     </td>
@@ -299,7 +441,7 @@ const OrderConsole = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
                         <span 
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          className={`px-2 py-0.5 text-sm font-semibold rounded-full ${
                             order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                             order.status === 'processing order' ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' :
                             order.status === 'completed' ? 'bg-green-100 text-green-800' :
