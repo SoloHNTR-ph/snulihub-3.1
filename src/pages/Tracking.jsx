@@ -135,16 +135,27 @@ const Tracking = () => {
 
     try {
       setSubmitting(true);
+      const db = getFirestore(app);
+      const orderRef = doc(db, 'orders', order.id);
       
-      // Here you would typically upload the proof of payment image to storage
-      // and get the URL, but for now we'll just update the status
-      
-      await orderService.updateOrderStatus(order.id, 'verify payment');
+      // Update order with payment information
+      await updateDoc(orderRef, {
+        paymentInfo: {
+          method: paymentForm.paymentMethod,
+          reference: paymentForm.referenceNumber,
+        },
+        status: 'verify payment',
+        updatedAt: serverTimestamp()
+      });
       
       // Update local state
       setOrder(prev => ({
         ...prev,
-        status: 'verify payment'
+        status: 'verify payment',
+        paymentInfo: {
+          method: paymentForm.paymentMethod,
+          reference: paymentForm.referenceNumber,
+        }
       }));
       setPaymentStatus('verify payment');
       setShowPaymentModal(false);
@@ -402,7 +413,7 @@ const Tracking = () => {
 
       {/* Payment Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center mt-16 justify-center p-4 z-50">
           <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-md relative animate-fadeIn">            
             <XMarkIcon 
               className="h-5 w-5 absolute right-4 top-4 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" 
@@ -432,7 +443,7 @@ const Tracking = () => {
                       onChange={handlePaymentFormChange}
                       className="sr-only"
                     />
-                    <img src="/gcash-logo.png" alt="GCash" className="h-6 w-auto mb-1" />
+                    <img src="https://logos-download.com/wp-content/uploads/2020/06/GCash_Logo.png" alt="GCash" className="h-6 w-auto mb-1 rounded-md" />
                     <span className="text-xs font-medium">GCash</span>
                     {paymentForm.paymentMethod === 'gcash' && (
                       <div className="absolute top-1 right-1 h-2 w-2">
@@ -457,7 +468,7 @@ const Tracking = () => {
                       onChange={handlePaymentFormChange}
                       className="sr-only"
                     />
-                    <img src="/maya-logo.png" alt="Maya" className="h-6 w-auto mb-1" />
+                    <img src="https://logodix.com/logo/2206804.jpg" alt="Maya" className="h-6 w-auto mb-1 rounded-md" />
                     <span className="text-xs font-medium">Maya</span>
                     {paymentForm.paymentMethod === 'maya' && (
                       <div className="absolute top-1 right-1 h-2 w-2">
@@ -482,7 +493,7 @@ const Tracking = () => {
                       onChange={handlePaymentFormChange}
                       className="sr-only"
                     />
-                    <img src="/bank-logo.png" alt="Bank Transfer" className="h-6 w-auto mb-1" />
+                    <img src="https://freeiconshop.com/wp-content/uploads/edd/bank-flat.png" alt="Bank Transfer" className="h-6 w-auto mb-1 rounded-md" />
                     <span className="text-xs font-medium">Bank</span>
                     {paymentForm.paymentMethod === 'bank' && (
                       <div className="absolute top-1 right-1 h-2 w-2">
@@ -520,49 +531,24 @@ const Tracking = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label htmlFor="amount" className="block text-xs font-medium text-gray-700 mb-1">
-                        Amount
-                      </label>
-                      <style jsx>{`
-                        input[type="number"]::-webkit-inner-spin-button,
-                        input[type="number"]::-webkit-outer-spin-button {
-                          -webkit-appearance: none;
-                          margin: 0;
-                        }
-                        input[type="number"] {
-                          -moz-appearance: textfield;
-                        }
-                      `}</style>
-                      <input
-                        type="text"
-                        name="amount"
-                        id="amount"
-                        value={paymentForm.amount}
-                        onChange={handlePaymentFormChange}
-                        className="w-full px-3 py-2 rounded-lg border-0 bg-gray-100/50 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                        required
-                        placeholder="Enter amount"
-                        inputMode="decimal"
-                      />
-                    </div>
+                  <div className="flex justify-center">
+                    <span className="text-lg font-semibold text-gray-900">Total Amount: ₱{order?.totalAmount?.toLocaleString() || '0'}</span>
+                  </div>
 
-                    <div>
-                      <label htmlFor="referenceNumber" className="block text-xs font-medium text-gray-700 mb-1">
-                        Reference No.
-                      </label>
-                      <input
-                        type="text"
-                        name="referenceNumber"
-                        id="referenceNumber"
-                        value={paymentForm.referenceNumber}
-                        onChange={handlePaymentFormChange}
-                        className="w-full px-3 py-2 rounded-lg border-0 bg-gray-100/50 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                        required
-                        placeholder="Enter reference"
-                      />
-                    </div>
+                  <div>
+                    <label htmlFor="referenceNumber" className="block text-xs font-medium text-gray-700 mb-1">
+                      Reference No.
+                    </label>
+                    <input
+                      type="text"
+                      name="referenceNumber"
+                      id="referenceNumber"
+                      value={paymentForm.referenceNumber}
+                      onChange={handlePaymentFormChange}
+                      className="w-full px-3 py-2 rounded-lg border-0 bg-gray-100/50 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                      required
+                      placeholder="Enter reference"
+                    />
                   </div>
 
                   {/* <div>
@@ -570,23 +556,66 @@ const Tracking = () => {
                       Proof of Payment
                     </label>
                     <div className="mt-1 flex justify-center px-4 py-3 border-2 border-gray-300 border-dashed rounded-lg">
-                      <div className="space-y-1 text-center">
-                        <PhotoIcon className="mx-auto h-8 w-8 text-gray-400" />
-                        <div className="flex text-xs text-gray-600">
-                          <label htmlFor="proofOfPayment" className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
-                            <span>Upload a file</span>
-                            <input
-                              id="proofOfPayment"
-                              name="proofOfPayment"
-                              type="file"
-                              className="sr-only"
-                              onChange={handlePaymentFormChange}
-                              accept="image/*"
-                              required
+                      {paymentForm.proofOfPayment ? (
+                        <div className="relative w-full">
+                          <div className="h-20 w-full flex items-center justify-center">
+                            <img
+                              src={URL.createObjectURL(paymentForm.proofOfPayment)}
+                              alt="Proof of Payment Preview"
+                              className="max-h-full max-w-full object-contain"
                             />
-                          </label>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentForm(prev => ({
+                                ...prev,
+                                proofOfPayment: null
+                              }));
+                            }}
+                            className="absolute top-0 right-0 p-1 bg-red-100 rounded-full text-red-600 hover:bg-red-200"
+                          >
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                          <p className="text-xs text-center mt-1 text-gray-500">
+                            {paymentForm.proofOfPayment.name}
+                          </p>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-1 text-center">
+                          <PhotoIcon className="mx-auto h-8 w-8 text-gray-400" />
+                          <div className="flex flex-col text-xs text-gray-600">
+                            <label htmlFor="proofOfPayment" className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
+                              <span>Upload a file</span>
+                              <input
+                                id="proofOfPayment"
+                                name="proofOfPayment"
+                                type="file"
+                                className="sr-only"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    if (file.size > 3 * 1024 * 1024) {
+                                      alert('File size must be less than 3MB');
+                                      e.target.value = '';
+                                      return;
+                                    }
+                                    if (!file.type.startsWith('image/')) {
+                                      alert('Please upload an image file');
+                                      e.target.value = '';
+                                      return;
+                                    }
+                                    handlePaymentFormChange(e);
+                                  }
+                                }}
+                                accept="image/*"
+                                required
+                              />
+                            </label>
+                            <p className="text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div> */}
                 </>

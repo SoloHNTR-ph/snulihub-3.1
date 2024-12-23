@@ -5,6 +5,7 @@ import {
   getDocs,
   query,
   where,
+  onSnapshot
 } from 'firebase/firestore';
 import app from '../firebaseConfig';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +42,14 @@ const OrderConsole = () => {
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
 
+  const updateStatistics = (ordersData) => {
+    const revenue = ordersData.reduce((total, order) => total + order.totalAmount, 0);
+    setTotalRevenue(revenue);
+
+    const uniqueCustomerIds = new Set(ordersData.map(order => order.userId));
+    setUniqueCustomers(uniqueCustomerIds.size);
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const userRole = sessionStorage.getItem('userRole');
@@ -56,46 +65,45 @@ const OrderConsole = () => {
         });
         return;
       }
-
-      fetchOrders();
     };
 
     checkAuth();
   }, [currentUser, navigate]);
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    if (!currentUser) return;
+
+    const ordersRef = collection(db, 'orders');
+    const q = query(
+      ordersRef,
+      where('franchiseId', '==', 'default')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       try {
-        const ordersRef = collection(db, 'orders');
-        const q = query(
-          ordersRef,
-          where('franchiseId', '==', 'default')
-        );
-        
-        const querySnapshot = await getDocs(q);
-        const ordersData = querySnapshot.docs.map(doc => ({
+        const ordersData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
 
         ordersData.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+        
         setOrders(ordersData);
         
-        const revenue = ordersData.reduce((total, order) => total + order.totalAmount, 0);
-        setTotalRevenue(revenue);
-
-        const uniqueCustomerIds = new Set(ordersData.map(order => order.userId));
-        setUniqueCustomers(uniqueCustomerIds.size);
-
+        updateStatistics(ordersData);
+        
         setOrdersLoading(false);
       } catch (error) {
-        console.error('Error fetching orders:', error);
+        console.error('Error in real-time update:', error);
         setOrdersLoading(false);
       }
-    };
+    }, (error) => {
+      console.error('Error setting up real-time listener:', error);
+      setOrdersLoading(false);
+    });
 
-    fetchOrders();
-  }, []);
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const formatStatus = (status) => {
     if (status === 'verify payment') return 'Verify Payment';
@@ -169,51 +177,61 @@ const OrderConsole = () => {
       {/* Confirmation Modal */}
       {showConfirmModal && selectedOrder && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-md relative animate-fadeIn">
-            <XMarkIcon 
-              className="h-5 w-5 absolute right-4 top-4 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" 
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-md relative animate-fadeIn">
+          <XMarkIcon 
+            className="h-5 w-5 absolute right-4 top-4 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" 
+            onClick={() => {
+              setShowConfirmModal(false);
+              setSelectedOrder(null);
+            }}
+          />
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            {modalType === 'payment' ? 'Confirm Payment' : 'Confirm Shipping'}
+          </h2>
+          
+          <div className="bg-gray-50 p-3 rounded-lg text-sm mb-4">
+            <p className="text-gray-600">
+              Order: <span className="font-medium text-gray-900">{selectedOrder.trackingNumber}</span>
+            </p>
+            <p className="text-gray-600">
+              Customer: <span className="font-medium text-gray-900">{selectedOrder.customerInfo.firstName} {selectedOrder.customerInfo.lastName}</span>
+            </p>
+            {selectedOrder.paymentInfo && (
+              <>
+                <p className="text-gray-600">
+                  Payment Method: <span className="font-medium text-gray-900 capitalize">{selectedOrder.paymentInfo.method}</span>
+                </p>
+                <p className="text-gray-600">
+                  Reference Number: <span className="font-medium text-gray-900">{selectedOrder.paymentInfo.reference}</span>
+                </p>
+              </>
+            )}
+            {modalType === 'shipping' && (
+              <p className="text-gray-600 mt-2">
+                The product is sent to the customer?
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-center gap-3">
+            <button
               onClick={() => {
                 setShowConfirmModal(false);
                 setSelectedOrder(null);
               }}
-            />
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={modalType === 'payment' ? handlePaymentConfirmation : handleShippingConfirmation}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            >
               {modalType === 'payment' ? 'Confirm Payment' : 'Confirm Shipping'}
-            </h2>
-            
-            <div className="bg-gray-50 p-3 rounded-lg text-sm mb-4">
-              <p className="text-gray-600">
-                Order: <span className="font-medium text-gray-900">{selectedOrder.trackingNumber}</span>
-              </p>
-              <p className="text-gray-600">
-                Customer: <span className="font-medium text-gray-900">{selectedOrder.customerInfo.firstName} {selectedOrder.customerInfo.lastName}</span>
-              </p>
-              {modalType === 'shipping' && (
-                <p className="text-gray-600 mt-2">
-                  The product is sent to the customer?
-                </p>
-              )}
-            </div>
-
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => {
-                  setShowConfirmModal(false);
-                  setSelectedOrder(null);
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={modalType === 'payment' ? handlePaymentConfirmation : handleShippingConfirmation}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-              >
-                {modalType === 'payment' ? 'Confirm Payment' : 'Confirm Shipping'}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
+      </div>
       )}
 
       {/* Order Details Modal */}
@@ -264,12 +282,21 @@ const OrderConsole = () => {
                     <MapPinIcon className="h-4 w-4 text-gray-600" />
                     <h3 className="font-semibold text-gray-900 text-sm">Shipping Address</h3>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="font-medium text-sm">{selectedOrderDetails.shippingAddress.address}</p>
-                    <p className="font-medium text-sm">
-                      {`${selectedOrderDetails.shippingAddress.city}, ${selectedOrderDetails.shippingAddress.state} ${selectedOrderDetails.shippingAddress.zipCode}`}
-                    </p>
-                    <p className="font-medium text-sm">{selectedOrderDetails.shippingAddress.country}</p>
+                  <div className="space-y-1">
+                    <div>
+                      <p className="text-gray-500 text-xs">Street Address</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.shippingAddress.address}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">City, State & ZIP</p>
+                      <p className="font-medium text-sm">
+                        {`${selectedOrderDetails.shippingAddress.city}, ${selectedOrderDetails.shippingAddress.state} ${selectedOrderDetails.shippingAddress.zipCode}`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Country</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.shippingAddress.country}</p>
+                    </div>
                   </div>
                 </div>
 
@@ -281,7 +308,7 @@ const OrderConsole = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     <div>
-                      <p className="text-gray-500 text-xs">Status</p>
+                      <p className="text-gray-500 text-xs">Current Status</p>
                       <span className={`inline-block px-2 py-0.5 text-sm font-semibold rounded ${
                         selectedOrderDetails.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                         selectedOrderDetails.status === 'processing order' ? 'bg-blue-100 text-blue-800' :
@@ -295,7 +322,11 @@ const OrderConsole = () => {
                     </div>
                     <div>
                       <p className="text-gray-500 text-xs">Tracking Number</p>
-                      <p className="font-medium text-sm">{selectedOrderDetails.trackingNumber}</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.trackingNumber || 'Not Available'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-gray-500 text-xs">Order Date</p>
+                      <p className="font-medium text-sm">{selectedOrderDetails.createdAt ? new Date(selectedOrderDetails.createdAt.toDate()).toLocaleDateString() : 'N/A'}</p>
                     </div>
                   </div>
                 </div>
@@ -309,22 +340,57 @@ const OrderConsole = () => {
                   <div className="space-y-1.5">
                     {selectedOrderDetails.items.map((item, index) => (
                       <div key={index} className="flex items-center justify-between py-1 border-b border-gray-200 last:border-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
                           <div>
+                            <p className="text-gray-500 text-xs">Item</p>
                             <p className="font-medium text-sm">{item.name}</p>
-                            <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                           </div>
                         </div>
-                        <p className="font-medium text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+                        <div className="flex gap-4">
+                          <div className="text-right">
+                            <p className="text-gray-500 text-xs">Price</p>
+                            <p className="text-sm">${item.price.toFixed(2)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-gray-500 text-xs">Qty</p>
+                            <p className="text-sm">{item.quantity}</p>
+                          </div>
+                          <div className="text-right min-w-[80px]">
+                            <p className="text-gray-500 text-xs">Total</p>
+                            <p className="font-medium text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+                          </div>
+                        </div>
                       </div>
                     ))}
-                    <div className="flex justify-between pt-1 font-semibold text-sm">
-                      <p>Total Amount</p>
-                      <p className="text-primary-600">${selectedOrderDetails.totalAmount.toFixed(2)}</p>
+                    <div className="flex justify-end pt-1">
+                      <div className="text-right min-w-[80px]">
+                        <p className="text-gray-500 text-xs">Total Amount</p>
+                        <p className="font-medium text-sm text-primary-600">${selectedOrderDetails.totalAmount.toFixed(2)}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Payment Information */}
+                {selectedOrderDetails.paymentInfo && (
+                  <div className="bg-gray-50 p-2 rounded">
+                    <div className="flex items-center gap-1 mb-1">
+                      <TruckIcon className="h-4 w-4 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900 text-sm">Payment Information</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div>
+                        <p className="text-gray-500 text-xs">Payment Method</p>
+                        <p className="font-medium text-sm capitalize">{selectedOrderDetails.paymentInfo.method}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Reference Number</p>
+                        <p className="font-medium text-sm">{selectedOrderDetails.paymentInfo.reference}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Seller Message */}
                 {selectedOrderDetails.sellerMessage && (
@@ -333,7 +399,10 @@ const OrderConsole = () => {
                       <ChatBubbleLeftIcon className="h-4 w-4 text-gray-600" />
                       <h3 className="font-semibold text-gray-900 text-sm">Seller Message</h3>
                     </div>
-                    <p className="text-sm">{selectedOrderDetails.sellerMessage}</p>
+                    <div>
+                      <p className="text-gray-500 text-xs">Message</p>
+                      <p className="text-sm">{selectedOrderDetails.sellerMessage}</p>
+                    </div>
                   </div>
                 )}
               </div>
