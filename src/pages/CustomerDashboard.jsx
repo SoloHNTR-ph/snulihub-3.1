@@ -7,10 +7,12 @@ import {
   ClockIcon, 
   HeartIcon, 
   UserCircleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  MapPinIcon
 } from '@heroicons/react/24/outline';
 import { doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 const CustomerDashboard = () => {
   const { currentUser, isCustomer, logout } = useAuth();
@@ -18,6 +20,8 @@ const CustomerDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [userData, setUserData] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
 
   useEffect(() => {
     if (!currentUser || (!isCustomer && !currentUser?.category === 'test')) {
@@ -72,6 +76,11 @@ const CustomerDashboard = () => {
     return status.split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  const handleOrderClick = (order) => {
+    setSelectedOrder(order);
+    setShowOrderDetailsModal(true);
   };
 
   if (!currentUser || (!isCustomer && !currentUser?.category === 'test')) return null;
@@ -177,8 +186,8 @@ const CustomerDashboard = () => {
                   orders.map((order) => (
                     <tr 
                       key={order.id}
-                      onClick={() => navigate(`/order/${order.userId}/${order.orderCode}`)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                      onClick={() => handleOrderClick(order)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {order.trackingNumber}
@@ -199,7 +208,16 @@ const CustomerDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         ${order.totalAmount.toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="py-4 whitespace-nowrap text-sm text-gray-500 space-x-2 flex items-center justify-between w-20">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/order/${order.userId}/${order.orderCode}`);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                        >
+                          Track
+                        </button>
                         {order.status !== 'pending' && (
                           order.followUp ? (
                             <div className="flex items-center justify-center text-green-600">
@@ -230,6 +248,131 @@ const CustomerDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Order Details Modal */}
+      {showOrderDetailsModal && selectedOrder && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowOrderDetailsModal(false)}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto md:w-[600px] lg:w-[800px] xl:w-[1000px]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-bold text-gray-900">Order Details</h2>
+                <XMarkIcon 
+                  className="h-5 w-5 text-gray-400 hover:text-gray-500 cursor-pointer transition-colors" 
+                  onClick={() => setShowOrderDetailsModal(false)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                {/* Customer Info and Status - Side by Side */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Customer Info */}
+                  <div className="bg-gray-50 p-2 rounded">
+                    <div className="flex items-center gap-1">
+                      <UserCircleIcon className="h-4 w-4 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900 text-sm">Customer Info</h3>
+                    </div>
+                    <div className="mt-1 space-y-0.5">
+                      <p className="text-sm">
+                        <span className="text-gray-500">Name:</span>{' '}
+                        <span className="font-medium">{`${selectedOrder.customerInfo.firstName} ${selectedOrder.customerInfo.lastName}`}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="text-gray-500">Email:</span>{' '}
+                        <span className="font-medium">{selectedOrder.customerInfo.email}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="text-gray-500">Phone:</span>{' '}
+                        <span className="font-medium">{selectedOrder.customerInfo.primaryPhone || 'N/A'}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Order Status */}
+                  <div className="bg-gray-50 p-2 rounded">
+                    <div className="flex items-center gap-1">
+                      <ClockIcon className="h-4 w-4 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900 text-sm">Order Status</h3>
+                    </div>
+                    <div className="mt-1 space-y-0.5">
+                      <div>
+                        <span className="text-gray-500 text-sm">Status:</span>{' '}
+                        <span className={`inline-block px-2 py-0.5 text-sm font-semibold rounded ${
+                          selectedOrder.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          selectedOrder.status === 'processing order' ? 'bg-blue-100 text-blue-800' :
+                          selectedOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          selectedOrder.status === 'verify payment' ? 'bg-purple-100 text-purple-800' :
+                          selectedOrder.status === 'order sent' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {formatStatus(selectedOrder.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm">
+                        <span className="text-gray-500">Tracking:</span>{' '}
+                        <span className="font-medium">{selectedOrder.trackingNumber || 'N/A'}</span>
+                      </p>
+                      <p className="text-sm">
+                        <span className="text-gray-500">Date:</span>{' '}
+                        <span className="font-medium">{selectedOrder.createdAt ? new Date(selectedOrder.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping Address */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-1">
+                    <MapPinIcon className="h-4 w-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Shipping Address</h3>
+                  </div>
+                  <div className="mt-1">
+                    <p className="text-sm font-medium">
+                      {selectedOrder.shippingAddress.address},{' '}
+                      {`${selectedOrder.shippingAddress.city}, ${selectedOrder.shippingAddress.state} ${selectedOrder.shippingAddress.zipCode}`},{' '}
+                      {selectedOrder.shippingAddress.country}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-1">
+                    <ShoppingBagIcon className="h-4 w-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Order Items</h3>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {selectedOrder.items.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between py-1 border-b border-gray-200 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
+                          <p className="font-medium text-sm">{item.name}</p>
+                        </div>
+                        <div className="flex gap-4 text-sm">
+                          <span>${item.price.toFixed(2)}</span>
+                          <span>×{item.quantity}</span>
+                          <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex justify-end pt-1">
+                      <div className="text-right">
+                        <span className="text-gray-500 text-sm">Total:</span>{' '}
+                        <span className="font-medium text-primary-600 text-sm">${selectedOrder.totalAmount.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
