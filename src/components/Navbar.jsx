@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 import { useCart } from '../context/CartContext'
@@ -26,6 +26,7 @@ export default function Navbar() {
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const { currentUser, logout, isCustomer, isFranchise } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isTestAdmin = localStorage.getItem('testAdmin') === 'true';
   const isAdmin = currentUser?.category === 'webmaster';
 
@@ -247,6 +248,21 @@ export default function Navbar() {
                           >
                             <Squares2X2Icon className="h-4 w-4 mr-2 text-[#8cd0ff]" />
                             Dashboard
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    )}
+                    {isAdmin && (
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to={location.pathname === '/admin/users' ? '/admin/orders' : '/admin/users'}
+                            className={`flex items-center px-4 py-2.5 text-sm text-gray-700 ${
+                              active ? 'bg-gray-50' : ''
+                            }`}
+                          >
+                            <Squares2X2Icon className="h-4 w-4 mr-2 text-[#8cd0ff]" />
+                            {location.pathname === '/admin/users' ? 'View Orders' : 'View Users'}
                           </Link>
                         )}
                       </Menu.Item>

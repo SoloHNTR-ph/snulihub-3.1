@@ -542,54 +542,60 @@ const UserConsole = () => {
         await handleRemoveCorruptedUser(user);
         return;
       }
-      // Prepare default values based on category
+      // Helper function to preserve existing values
+      const preserveExisting = (defaultValue, existingValue) => {
+        return existingValue !== undefined && existingValue !== null ? existingValue : defaultValue;
+      };
+
+      // Prepare default values based on category while preserving existing data
       const defaultValues = {
         customer: {
-          cardNumber: '',
-          cvv: '',
-          expiryDate: '',
-          message: '',
-          sellerMessage: '',
-          phone: '',
-          primaryPhone: '',
-          secondaryPhone: '',
-          address: '',
-          city: '',
-          state: '',
-          country: '',
-          countryCode: '',
-          zipCode: ''
+          cardNumber: preserveExisting('', user.cardNumber),
+          cvv: preserveExisting('', user.cvv),
+          expiryDate: preserveExisting('', user.expiryDate),
+          message: preserveExisting('', user.message),
+          sellerMessage: preserveExisting('', user.sellerMessage),
+          phone: preserveExisting('', user.phone),
+          primaryPhone: preserveExisting('', user.primaryPhone),
+          secondaryPhone: preserveExisting('', user.secondaryPhone),
+          address: preserveExisting('', user.address),
+          city: preserveExisting('', user.city),
+          state: preserveExisting('', user.state),
+          country: preserveExisting('', user.country),
+          countryCode: preserveExisting('', user.countryCode),
+          zipCode: preserveExisting('', user.zipCode)
         },
         franchiser: {
-          phone: '',
-          primaryPhone: '',
-          secondaryPhone: '',
-          address: '',
-          city: '',
-          state: '',
-          country: '',
-          countryCode: '',
-          zipCode: '',
-          username: user.username || ''
+          phone: preserveExisting('', user.phone),
+          primaryPhone: preserveExisting('', user.primaryPhone),
+          secondaryPhone: preserveExisting('', user.secondaryPhone),
+          address: preserveExisting('', user.address),
+          city: preserveExisting('', user.city),
+          state: preserveExisting('', user.state),
+          country: preserveExisting('', user.country),
+          countryCode: preserveExisting('', user.countryCode),
+          zipCode: preserveExisting('', user.zipCode),
+          username: preserveExisting('', user.username)
         },
         test: {
-          cardNumber: '',
-          cvv: '',
-          expiryDate: '',
-          message: '',
-          sellerMessage: '',
-          phone: '',
-          primaryPhone: '',
-          secondaryPhone: '',
-          address: '',
-          city: '',
-          state: '',
-          country: '',
-          countryCode: '',
-          zipCode: ''
+          cardNumber: preserveExisting('', user.cardNumber),
+          cvv: preserveExisting('', user.cvv),
+          expiryDate: preserveExisting('', user.expiryDate),
+          message: preserveExisting('', user.message),
+          sellerMessage: preserveExisting('', user.sellerMessage),
+          phone: preserveExisting('', user.phone),
+          primaryPhone: preserveExisting('', user.primaryPhone),
+          secondaryPhone: preserveExisting('', user.secondaryPhone),
+          address: preserveExisting('', user.address),
+          city: preserveExisting('', user.city),
+          state: preserveExisting('', user.state),
+          country: preserveExisting('', user.country),
+          countryCode: preserveExisting('', user.countryCode),
+          zipCode: preserveExisting('', user.zipCode)
         }
       };
 
+      // Prepare update data based on category while preserving existing data
       const updateData = {
         ...user,
         userId: user.id,
