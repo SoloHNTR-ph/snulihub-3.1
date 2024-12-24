@@ -242,7 +242,12 @@ const Tracking = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-4 left-4 mt-20">
+        <Link to="/customer/dashboard" className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
+          <span>← Back to Dashboard</span>
+        </Link>
+      </div>
+      <main className="max-w-3xl mx-auto mt-20 py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8 h-auto">
           <div className="flex justify-between items-start w-full mb-8 relative">
             {/* Add a background line that spans the entire width */}

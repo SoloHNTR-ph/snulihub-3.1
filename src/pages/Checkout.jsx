@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { productService } from '../services/productService';
 import { useParams } from 'react-router-dom';
 import { useStore } from '../utils/useStore';
+import { Link } from 'react-router-dom';
 
 // Add country data
 const countries = [
@@ -35,6 +36,7 @@ const Checkout = () => {
   const { currentUser, login } = useAuth();
   const { storeSlug } = useParams();
   const { storeData, loading: storeLoading, error: storeError, setStoreData } = useStore(storeSlug);
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -428,6 +430,47 @@ const Checkout = () => {
     }
   };
 
+  const validateStep = (step) => {
+    const errors = {};
+    
+    if (step === 1) {
+      if (!formData.firstName.trim()) errors.firstName = 'First name is required';
+      if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
+      if (!formData.email.trim()) {
+        errors.email = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        errors.email = 'Please enter a valid email';
+      }
+      if (!formData.primaryPhone.trim()) errors.primaryPhone = 'Primary phone is required';
+    }
+    
+    if (step === 2) {
+      if (!formData.address.trim()) errors.address = 'Address is required';
+      if (!formData.city.trim()) errors.city = 'City is required';
+      if (!formData.state.trim()) errors.state = 'State is required';
+      if (!formData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
+      if (!formData.country) errors.country = 'Country is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, steps.length));
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const steps = [
+    { id: 1, title: 'Contact Information' },
+    { id: 2, title: 'Shipping Details' }
+  ];
+
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -449,11 +492,16 @@ const Checkout = () => {
 
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+      <div className="absolute top-4 left-4">
+        <Link to={`/store`} className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
+          <span>← Back to Store</span>
+        </Link>
+      </div>
       <div className="flex-1 max-w-7xl mx-auto w-full p-3">
         <h1 className="text-2xl font-bold text-gray-900 text-center mb-3 fade-in-up">
           Finalizing Order
         </h1>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-[calc(100%-2rem)]">
           {/* Order Summary */}
           <div className="fade-in-right">
@@ -517,235 +565,297 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Checkout Form */}
-          <div className="fade-in-up">
-            <div className="backdrop-blur-lg bg-white/80 p-3 rounded-xl shadow-xl border border-gray-100 gap-5">
-              <h2 className="text-lg font-bold text-gray-900 mb-2">Order Confimation</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Personal Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="firstName"
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      required
-                      placeholder=" "
-                    />
-                    <label htmlFor="firstName" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">First Name</label>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="lastName"
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      required
-                      placeholder=" "
-                    />
-                    <label htmlFor="lastName" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Last Name</label>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className={`peer w-full px-2 py-1.5 rounded-lg border ${formErrors.email ? 'border-red-500' : 'border-gray-200'} focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black`}
-                    required
-                    placeholder=" "
-                  />
-                  <label htmlFor="email" className={`absolute text-sm ${formErrors.email ? 'text-red-500' : 'text-gray-500'} duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1`}>Email</label>
-                  {formErrors.email && (
-                    <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
-                  )}
-                </div>
-
-                {/* Phone Number */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <input
-                      type="tel"
-                      name="primaryPhone"
-                      id="primaryPhone"
-                      value={formData.primaryPhone}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      required
-                      placeholder=" "
-                    />
-                    <label htmlFor="primaryPhone" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Phone Number</label>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="tel"
-                      name="secondaryPhone"
-                      id="secondaryPhone"
-                      value={formData.secondaryPhone}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      placeholder=" "
-                    />
-                    <label htmlFor="secondaryPhone" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Alternative Phone (Optional)</label>
-                  </div>
-                </div>
-
-                {/* Address and City */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="relative md:col-span-2">
-                    <input
-                      type="text"
-                      name="address"
-                      id="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      required
-                      placeholder=" "
-                    />
-                    <label htmlFor="address" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Full Address</label>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="city"
-                      id="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      required
-                      placeholder=" "
-                    />
-                    <label htmlFor="city" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">City</label>
-                  </div>
-                </div>
-
-                {/* State, Country, and Zip Code */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="state"
-                      id="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      required
-                      placeholder=" "
-                    />
-                    <label htmlFor="state" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">State</label>
-                  </div>
-
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                      className="peer w-full pl-3 pr-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black text-left"
-                    >
-                      {formData.country ? (
-                        <div className="flex items-center gap-2">
-                          <ReactCountryFlag
-                            countryCode={countries.find(c => c.name === formData.country)?.code || 'US'}
-                            svg
-                            style={{
-                              width: '20px',
-                              height: '15px',
-                            }}
-                          />
-                          {formData.country}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Select country</span>
+          {/* Form Section */}
+          <div className="fade-in-left">
+            <form onSubmit={handleSubmit} className="backdrop-blur-lg bg-white/90 p-6 rounded-xl shadow-xl border border-gray-100">
+              <div className="border-b border-gray-200 pb-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Order Confirmation</h2>
+                <p className="text-sm text-gray-500 mt-1">Please complete all required fields</p>
+              </div>
+              
+              {/* Progress Steps */}
+              <div className="mb-8">
+                <div className="flex justify-center items-center">
+                  {steps.map((step, index) => (
+                    <div key={step.id} className="flex items-center">
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
+                        currentStep >= step.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100'
+                      }`}>
+                        {step.id}
+                      </div>
+                      <div className={`ml-2 text-sm font-medium transition-all duration-200 ${
+                        currentStep >= step.id ? 'text-blue-600' : 'text-gray-400'
+                      }`}>
+                        {step.title}
+                      </div>
+                      {index < steps.length - 1 && (
+                        <div className={`w-16 h-0.5 mx-2 rounded transition-all duration-200 ${
+                          currentStep > step.id ? 'bg-blue-600' : 'bg-gray-200'
+                        }`} />
                       )}
-                    </button>
-                    {showCountryDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto">
-                        <div className="p-1">
-                          {countries.map((country) => (
-                            <button
-                              key={country.code}
-                              type="button"
-                              onClick={() => {
-                                handleInputChange({
-                                  target: { name: 'country', value: country.name }
-                                });
-                                handleInputChange({
-                                  target: { name: 'countryCode', value: country.code }
-                                });
-                                setShowCountryDropdown(false);
-                              }}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-white"
-                              title={country.name}
-                            >
-                              <ReactCountryFlag
-                                countryCode={country.code}
-                                svg
-                                style={{
-                                  width: '20px',
-                                  height: '15px',
-                                }}
-                              />
-                              {country.name}
-                            </button>
-                          ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {currentStep === 1 && (
+                <div className="space-y-6 fade-in">
+                  <div className="bg-gray-50/50 p-4 rounded-lg border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <input
+                            type="text"
+                            name="firstName"
+                            placeholder="First Name"
+                            value={formData.firstName}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border ${formErrors.firstName ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            required
+                          />
+                          {formErrors.firstName && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.firstName}</p>
+                          )}
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            name="lastName"
+                            placeholder="Last Name"
+                            value={formData.lastName}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border ${formErrors.lastName ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            required
+                          />
+                          {formErrors.lastName && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.lastName}</p>
+                          )}
                         </div>
                       </div>
-                    )}
-                    <label className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Country</label>
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="zipCode"
-                      id="zipCode"
-                      value={formData.zipCode}
-                      onChange={handleInputChange}
-                      className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                      required
-                      placeholder=" "
-                    />
-                    <label htmlFor="zipCode" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Zip Code</label>
+                      <div>
+                        <input
+                          type="email"
+                          name="email"
+                          placeholder="Email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          required
+                        />
+                        {formErrors.email && (
+                          <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <input
+                            type="tel"
+                            name="primaryPhone"
+                            placeholder="Primary Phone"
+                            value={formData.primaryPhone}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border ${formErrors.primaryPhone ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            required
+                          />
+                          {formErrors.primaryPhone && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.primaryPhone}</p>
+                          )}
+                        </div>
+                        <div>
+                          <input
+                            type="tel"
+                            name="secondaryPhone"
+                            placeholder="Alternative Phone (Optional)"
+                            value={formData.secondaryPhone}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Message Seller */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="sellerMessage"
-                    id="sellerMessage"
-                    value={formData.sellerMessage}
-                    onChange={handleInputChange}
-                    className="peer w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:ring-0 focus:border-gray-200 outline-none transition-all duration-200 bg-white pt-4 text-black"
-                    placeholder=" "
-                    maxLength={500}
-                  />
-                  <label htmlFor="sellerMessage" className="absolute text-sm text-gray-500 duration-200 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Message Seller (Optional)</label>
+              {currentStep === 2 && (
+                <div className="space-y-6 fade-in">
+                  <div className="bg-gray-50/50 p-4 rounded-lg border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Shipping Details</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <input
+                          type="text"
+                          name="address"
+                          placeholder="Address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border ${formErrors.address ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          required
+                        />
+                        {formErrors.address && (
+                          <p className="mt-1 text-sm text-red-500">{formErrors.address}</p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <input
+                            type="text"
+                            name="city"
+                            placeholder="City"
+                            value={formData.city}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border ${formErrors.city ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            required
+                          />
+                          {formErrors.city && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.city}</p>
+                          )}
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            name="state"
+                            placeholder="State"
+                            value={formData.state}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border ${formErrors.state ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            required
+                          />
+                          {formErrors.state && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.state}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <input
+                            type="text"
+                            name="zipCode"
+                            placeholder="ZIP Code"
+                            value={formData.zipCode}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border ${formErrors.zipCode ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            required
+                          />
+                          {formErrors.zipCode && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.zipCode}</p>
+                          )}
+                        </div>
+                        <div>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                              className={`w-full px-3 py-2 border ${formErrors.country ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-left flex items-center justify-between`}
+                            >
+                              {formData.country ? (
+                                <div className="flex items-center gap-2">
+                                  <ReactCountryFlag
+                                    countryCode={countries.find(c => c.name === formData.country)?.code || 'US'}
+                                    svg
+                                    style={{
+                                      width: '20px',
+                                      height: '15px',
+                                    }}
+                                  />
+                                  {formData.country}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">Select country</span>
+                              )}
+                            </button>
+                            {formErrors.country && (
+                              <p className="mt-1 text-sm text-red-500">{formErrors.country}</p>
+                            )}
+                            {showCountryDropdown && (
+                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto">
+                                <div className="p-1">
+                                  {countries.map((country) => (
+                                    <button
+                                      key={country.code}
+                                      type="button"
+                                      onClick={() => {
+                                        handleInputChange({
+                                          target: { name: 'country', value: country.name }
+                                        });
+                                        handleInputChange({
+                                          target: { name: 'countryCode', value: country.code }
+                                        });
+                                        setShowCountryDropdown(false);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 rounded-md"
+                                    >
+                                      <ReactCountryFlag
+                                        countryCode={country.code}
+                                        svg
+                                        style={{
+                                          width: '20px',
+                                          height: '15px',
+                                        }}
+                                      />
+                                      {country.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <textarea
+                        name="sellerMessage"
+                        placeholder="Message to Seller (Optional)"
+                        value={formData.sellerMessage}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        rows="3"
+                      />
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                <p className="text-xs text-gray-600">You may now send your payment directly to the seller</p>
-                <div className="border-t border-gray-200 pt-1">
-                  <h3 className="text-md font-bold text-gray-900 mb-1">Payment Breakdown</h3>
-                  <p className="text-sm text-black">your tracking number will be securely generated as soon your order is finalized.</p>
-
+              <div className="mt-8 flex justify-between items-center border-t border-gray-100 pt-6">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      prevStep();
+                    }}
+                    className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                  >
+                    ← Previous Step
+                  </button>
+                )}
+                {currentStep < steps.length ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      nextStep();
+                    }}
+                    className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ml-auto"
+                  >
+                    Next Step →
+                  </button>
+                ) : (
                   <button
                     type="submit"
-                    className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 mt-4 focus:ring-0"
+                    className="px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 ml-auto"
                   >
                     Process Order
                   </button>
+                )}
+              </div>
+              
+              {formErrors.submit && (
+                <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg border border-red-100">
+                  {formErrors.submit}
                 </div>
-              </form>
-            </div>
+              )}
+            </form>
           </div>
         </div>
       </div>
